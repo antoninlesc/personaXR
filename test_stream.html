@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Persona XR - Hybrid Dashboard</title>
+    <!-- Importation de A-Frame pour la 3D -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --accent: #3b82f6; --emotion: #f43f5e; }
+        body { font-family: 'Consolas', 'Courier New', monospace; background-color: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* --- LAYOUT PRINCIPAL --- */
+        #scene-container { flex: 1.5; position: relative; border-right: 2px solid #334155; }
+        #ui-container { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow-y: auto; background-color: var(--bg); }
+        
+        /* --- PANNEAUX UI --- */
+        .panel { background: var(--panel); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #334155; }
+        h2 { margin-top: 0; font-size: 1.1rem; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .upload-zone { border: 2px dashed #475569; padding: 12px; text-align: center; border-radius: 8px; cursor: pointer; margin-bottom: 10px; transition: border-color 0.2s; font-size: 0.9rem;}
+        .upload-zone:hover { border-color: var(--accent); }
+        input[type="file"] { display: none; }
+        
+        .btn { background: var(--accent); color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-family: inherit; margin-top: 10px;}
+        .btn:hover { background: #2563eb; }
+        .btn:disabled { background: #475569; cursor: not-allowed; }
+        
+        #state-monitor { flex-grow: 1; background: #0b1120; padding: 10px; border-radius: 4px; overflow-y: auto; font-size: 0.8rem; color: #10b981; max-height: 150px; }
+        
+        #chat-window { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; min-height: 200px; }
+        .message { padding: 10px 14px; border-radius: 8px; max-width: 85%; line-height: 1.4; font-family: 'Segoe UI', sans-serif; }
+        .msg-user { background: #334155; align-self: flex-end; color: white; }
+        .msg-persona { background: #1e2235; border: 1px solid #312e81; align-self: flex-start; position: relative; }
+        
+        .emotion-tag { display: inline-block; background: rgba(244, 63, 94, 0.2); color: var(--emotion); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 4px; font-weight: bold; border: 1px solid rgba(244, 63, 94, 0.4); }
+        .text-content { white-space: pre-wrap; }
+        
+        .input-group { display: flex; gap: 10px; }
+        input[type="text"] { flex-grow: 1; background: #0b1120; border: 1px solid #334155; color: white; padding: 10px; border-radius: 4px; font-family: inherit; outline: none; }
+        input[type="text"]:focus { border-color: var(--accent); }
+        
+        .typing-indicator { color: #94a3b8; font-style: italic; font-size: 0.8rem; display: none; }
+        
+        /* Slider hauteur */
+        .slider-container { background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 10px; }
+        .slider-label { color: #94a3b8; font-size: 0.85rem; font-weight: bold; margin-bottom: 8px; display: block; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--accent); margin-top: -6px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #334155; border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+    <!-- PARTIE GAUCHE : SCÈNE 3D WEBXR -->
+    <div id="scene-container">
+        <!-- 'embedded' permet à la scène de rester dans sa div -->
+        <a-scene embedded background="color: #21252d">
+            
+            <!-- Éclairage du salon -->
+            <a-light type="ambient" color="#fff" intensity="0.5"></a-light>
+            <a-light type="directional" position="2 4 3" intensity="0.7" castShadow="true"></a-light>
+            <a-light type="point" position="-2 2 -2" color="#3b82f6" intensity="0.4"></a-light>
+
+            <!-- Le Salon -->
+            <a-entity id="room">
+                <a-plane rotation="-90 0 0" width="8" height="8" color="#4a4a4a" shadow="receive: true"></a-plane>
+                <a-plane position="0 2 -4" width="8" height="4" color="#2c3e50" shadow="receive: true"></a-plane>
+                <a-circle position="0 0.01 -1.5" radius="1.5" color="#e74c3c" rotation="-90 0 0"></a-circle>
+            </a-entity>
+
+            <!-- Ton Avatar (dynamique) - Centré à Z = -1.2 pour un face-à-face -->
+            <a-entity id="my-avatar" position="0 0 -1.2" scale="1 1 1" shadow="cast: true">
+                <!-- Placeholder visuel -->
+                <a-box id="avatar-placeholder" position="0 0.9 0" height="1.8" width="0.5" depth="0.3" color="#3b82f6" wireframe="true" opacity="0.6"></a-box>
+            </a-entity>
+
+            <!-- Caméra - Centrée à Z = 0 avec contrôles WASD activés -->
+            <a-entity position="0 1.6 0">
+                <a-camera look-controls="pointerLockEnabled: false" wasd-controls="acceleration: 10"></a-camera>
+            </a-entity>
+        </a-scene>
+    </div>
+
+    <!-- PARTIE DROITE : L'INTERFACE DU CERVEAU -->
+    <div id="ui-container">
+        
+        <div class="panel">
+            <h2>1. Configuration</h2>
+            
+            <!-- UPLOAD DU FICHIER GLB -->
+            <label class="upload-zone" id="glb-upload-zone">
+                <input type="file" id="glb-file-input" accept=".glb,.gltf">
+                <div id="glb-upload-text">1. Charger l'Avatar 3D (.glb)</div>
+            </label>
+
+            <!-- AJUSTEMENT HAUTEUR -->
+            <div class="slider-container">
+                <span class="slider-label">Ajustement Hauteur</span>
+                <input type="range" id="height-slider" min="-1.5" max="2.5" step="0.05" value="0">
+            </div>
+
+            <!-- UPLOAD DU JSON -->
+            <label class="upload-zone" id="json-upload-zone">
+                <input type="file" id="file-input" accept=".json">
+                <div id="upload-text">2. Charger la Persona (.json)</div>
+            </label>
+
+            <button class="btn" id="btn-load" onclick="loadPersona()">Compiler le Cerveau</button>
+            
+            <h2 style="margin-top: 15px;">Logs Système</h2>
+            <div id="state-monitor">
+                [SYS] Interface initialisée.<br>
+            </div>
+        </div>
+
+        <div class="panel" style="flex-grow: 1;">
+            <h2>2. Flux d'Interaction</h2>
+            
+            <div id="chat-window">
+                <!-- Messages -->
+            </div>
+            
+            <div class="typing-indicator" id="typing">L'IA réfléchit...</div>
+            
+            <div class="input-group">
+                <input type="text" id="user-input" placeholder="Parlez à la persona..." onkeypress="handleEnter(event)">
+                <button class="btn" style="width: auto; margin-top: 0;" onclick="sendMessage()" id="btn-send" disabled>Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LOGIQUE : MOTEUR LLM + ANIMATION 3D -->
+    <script>
+        const stateMonitor = document.getElementById('state-monitor');
+        function log(msg, type="INFO") {
+            const time = new Date().toLocaleTimeString();
+            const color = type === "ERR" ? "#ef4444" : type === "WARN" ? "#f59e0b" : "#10b981";
+            stateMonitor.innerHTML += `<span style="color: ${color}">[${time}] ${msg}</span><br>`;
+            stateMonitor.scrollTop = stateMonitor.scrollHeight;
+        }
+
+        // --- 1. Gestion de la 3D et Upload de l'Avatar ---
+        const avatarEl = document.getElementById('my-avatar');
+        const glbFileInput = document.getElementById('glb-file-input');
+        const glbUploadText = document.getElementById('glb-upload-text');
+        const heightSlider = document.getElementById('height-slider');
+        let modelMesh = null;
+
+        // Mise à jour de la hauteur en temps réel
+        heightSlider.addEventListener('input', (e) => {
+            const yOffset = e.target.value;
+            avatarEl.setAttribute('position', `0 ${yOffset} -1.2`);
+        });
+
+        // Lors du chargement du fichier 3D
+        glbFileInput.addEventListener('change', (e) => {
+            if(e.target.files.length > 0) {
+                const file = e.target.files[0];
+                glbUploadText.innerText = `🧍 ${file.name} sélectionné.`;
+                
+                // Cacher le placeholder (la boîte bleue filaire)
+                const placeholder = document.getElementById('avatar-placeholder');
+                if(placeholder) placeholder.setAttribute('visible', 'false');
+                
+                // Création d'une URL temporaire pointant vers le fichier local
+                const objectURL = URL.createObjectURL(file);
+                
+                // On met à jour l'entité 3D en utilisant le format url() sécurisé
+                avatarEl.removeAttribute('gltf-model'); 
+                avatarEl.setAttribute('gltf-model', `url(${objectURL})`);
+                
+                log(`[3D] Chargement du nouveau modèle : ${file.name}...`);
+            }
+        });
+
+        // Attend que l'avatar soit chargé pour récupérer son Mesh
+        avatarEl.addEventListener('model-loaded', () => {
+            modelMesh = avatarEl.getObject3D('mesh');
+            log("[3D] Modèle 3D compilé et prêt à l'animation !");
+        });
+
+        // Fonction magique pour modifier une blendshape par son nom
+        function setBlendshape(shapeName, value) {
+            if (!modelMesh) return;
+            modelMesh.traverse((node) => {
+                if (node.isMesh && node.morphTargetDictionary) {
+                    const index = node.morphTargetDictionary[shapeName];
+                    if (index !== undefined) {
+                        node.morphTargetInfluences[index] = value;
+                    }
+                }
+            });
+        }
+
+        // Mapping des émotions
+        function applyEmotionToAvatar(emotion) {
+            setBlendshape('Smile', 0);
+            setBlendshape('Angry', 0);
+            setBlendshape('Sad', 0);
+            setBlendshape('Surprise', 0);
+
+            switch(emotion) {
+                case 'Joie': setBlendshape('Smile', 1); break;
+                case 'Colere': 
+                case 'Frustration_Ouverte': setBlendshape('Angry', 1); break;
+                case 'Tristesse': setBlendshape('Sad', 1); break;
+                case 'Surprise': setBlendshape('Surprise', 1); break;
+            }
+        }
+
+        // --- 2. Gestion du Text-To-Speech (Kokoro Neural TTS + Fallback) ---
+        let ttsQueue = [];
+        let isSpeaking = false;
+        let mouthInterval;
+
+        function startLipSync() {
+            if (mouthInterval) return;
+            let isOpen = false;
+            mouthInterval = setInterval(() => {
+                setBlendshape('JawOpen', isOpen ? 0.8 : 0.1);
+                isOpen = !isOpen;
+            }, 100); 
+        }
+
+        function stopLipSync() {
+            clearInterval(mouthInterval);
+            mouthInterval = null;
+            setBlendshape('JawOpen', 0);
+        }
+
+        async function processTTS() {
+            if (isSpeaking || ttsQueue.length === 0) return;
+            
+            isSpeaking = true;
+            const textToSpeak = ttsQueue.shift();
+            
+            try {
+                // TENTATIVE 1 : Appel à l'API Locale Kokoro (si lancée via Docker)
+                log(`[TTS] Génération audio Kokoro pour : "${textToSpeak.substring(0, 15)}..."`);
+                
+                const response = await fetch('http://localhost:8880/v1/audio/speech', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'kokoro',
+                        input: textToSpeak,
+                        voice: 'ff_siwis', // Excellente voix féminine française (change pour 'fm_gaston' pour un homme)
+                        response_format: 'mp3',
+                        speed: 1.0
+                    })
+                });
+
+                if (!response.ok) throw new Error("Kokoro API non disponible");
+                
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                playAudio(url, true);
+
+            } catch (error) {
+                // TENTATIVE 2 : Fallback de survie (Google) si Kokoro échoue/n'est pas lancé
+                log("[WARN] Kokoro introuvable. Bascule sur Google TTS.", "WARN");
+                const url = `https://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=${encodeURIComponent(textToSpeak)}&tl=fr`;
+                playAudio(url, false);
+            }
+        }
+
+        function playAudio(audioUrl, isBlob) {
+            const audio = new Audio(audioUrl);
+            
+            audio.onplay = () => startLipSync();
+            
+            audio.onended = () => {
+                stopLipSync();
+                isSpeaking = false;
+                if (isBlob) URL.revokeObjectURL(audioUrl); // Nettoie la mémoire
+                processTTS();
+            };
+            
+            audio.onerror = () => {
+                console.warn("Erreur de lecture audio.");
+                stopLipSync();
+                isSpeaking = false;
+                processTTS();
+            };
+
+            audio.play().catch(e => {
+                console.error("Impossible de lire l'audio :", e);
+                stopLipSync();
+                isSpeaking = false;
+                processTTS();
+            });
+        }
+
+
+        // --- 3. Logique de l'Interface et Appels API ---
+        const chatWindow = document.getElementById('chat-window');
+        const uploadText = document.getElementById('upload-text');
+        const fileInput = document.getElementById('file-input');
+        const btnSend = document.getElementById('btn-send');
+
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files.length > 0) uploadText.innerText = `🧠 ${e.target.files[0].name} sélectionné.`;
+        });
+
+        async function loadPersona() {
+            if(fileInput.files.length === 0) { log("Veuillez sélectionner un fichier JSON Persona.", "ERR"); return; }
+            if(glbFileInput.files.length === 0) { log("Info : Aucun avatar 3D chargé, hologramme utilisé.", "WARN"); }
+            
+            try {
+                const file = fileInput.files[0];
+                const jsonText = await file.text();
+                const personaData = JSON.parse(jsonText);
+                
+                log("Envoi au moteur sémantique FastAPI...");
+                
+                const response = await fetch('http://localhost:8000/load-persona', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(personaData)
+                });
+
+                if(response.ok) {
+                    const name = personaData.persona?.name || "Inconnu";
+                    log(`Cerveau compilé avec succès. Persona: ${name}`);
+                    btnSend.disabled = false;
+                    applyEmotionToAvatar('Joie'); 
+                } else {
+                    log(`Erreur serveur: ${response.status}`, "ERR");
+                }
+            } catch (err) {
+                log(`Crash: ${err.message}`, "ERR");
+            }
+        }
+
+        function handleEnter(e) { if (e.key === 'Enter') sendMessage(); }
+
+        async function sendMessage() {
+            const inputField = document.getElementById('user-input');
+            const message = inputField.value.trim();
+            if (!message) return;
+
+            appendMessage(message, 'user');
+            inputField.value = '';
+            document.getElementById('typing').style.display = 'block';
+            btnSend.disabled = true;
+
+            const aiBubble = createAiBubble();
+            const emotionSpan = aiBubble.querySelector('.emotion-tag');
+            const textSpan = aiBubble.querySelector('.text-content');
+
+            let sentenceBuffer = '';
+
+            try {
+                const response = await fetch('http://localhost:8000/chat/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_message: message, history: [] })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = '';
+
+                document.getElementById('typing').style.display = 'none';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        if(sentenceBuffer.trim().length > 0) {
+                            ttsQueue.push(sentenceBuffer.trim());
+                            processTTS();
+                        }
+                        break;
+                    }
+
+                    buffer += decoder.decode(value, {stream: true});
+                    let packets = buffer.split('\n\n');
+                    buffer = packets.pop(); 
+
+                    for (let line of packets) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                if (data.type === 'emotion') {
+                                    emotionSpan.innerText = `{${data.value}}`;
+                                    emotionSpan.style.display = 'inline-block';
+                                    applyEmotionToAvatar(data.value); // L'AVATAR RÉAGIT ICI
+                                } else if (data.type === 'text') {
+                                    const word = data.value;
+                                    textSpan.textContent += word;
+                                    sentenceBuffer += word;
+                                    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+                                    if (/[.?!:]/.test(word)) {
+                                        ttsQueue.push(sentenceBuffer.trim());
+                                        sentenceBuffer = '';
+                                        processTTS();
+                                    }
+                                }
+                            } catch (e) { }
+                        }
+                    }
+                }
+            } catch (error) {
+                log(`Erreur: ${error.message}`, "ERR");
+            } finally {
+                document.getElementById('typing').style.display = 'none';
+                btnSend.disabled = false;
+                inputField.focus();
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `message ${sender === 'user' ? 'msg-user' : 'msg-persona'}`;
+            div.innerText = text;
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function createAiBubble() {
+            const div = document.createElement('div');
+            div.className = 'message msg-persona';
+            div.innerHTML = `
+                <div class="emotion-tag" style="display:none;"></div><br>
+                <span class="text-content"></span>
+            `;
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return div;
+        }
+    </script>
+</body>
+</html>

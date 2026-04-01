@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Showroom Persona WebXR</title>
+    <!-- Importation de A-Frame pour la 3D / WebXR -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        
+        /* Interface 2D superposée à la scène 3D */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 350px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            pointer-events: auto; /* Permet de cliquer sur l'UI */
+        }
+
+        h2 { margin-top: 0; font-size: 1.2em; color: #1f2937; }
+        
+        .control-group { margin-bottom: 15px; }
+        input[type="file"], input[type="text"] {
+            width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px;
+        }
+        
+        button {
+            width: 100%; padding: 10px; margin-top: 10px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
+        }
+        button:hover { background-color: #2563eb; }
+        
+        #status { font-size: 0.85em; font-weight: bold; margin-top: 5px; color: #64748b; }
+        #emotion-display { font-weight: bold; color: #ef4444; margin-top: 10px; }
+        #subtitle { 
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 8px;
+            font-size: 1.2em; z-index: 9999; text-align: center; max-width: 80%;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INTERFACE UTILISATEUR (2D) -->
+    <div id="ui-layer">
+        <h2>Contrôleur WebXR</h2>
+        
+        <div class="control-group">
+            <label>1. Charger la Persona</label>
+            <input type="file" id="personaFile" accept=".json">
+            <button onclick="loadPersona()">Initialiser l'Avatar</button>
+            <div id="status">Statut: En attente...</div>
+        </div>
+
+        <div class="control-group">
+            <label>2. Interagir avec l'Avatar</label>
+            <input type="text" id="userMessage" placeholder="Ex: Ce formulaire est impossible à lire !">
+            <button onclick="sendChatMessage()">Parler (Envoi Stream)</button>
+        </div>
+        
+        <div id="emotion-display">Émotion: ---</div>
+    </div>
+
+    <!-- SOUS-TITRES -->
+    <div id="subtitle">...</div>
+
+    <!-- SCÈNE 3D WEBXR (A-FRAME) -->
+    <a-scene background="color: #ECECEC">
+        
+        <!-- Éclairage -->
+        <a-light type="ambient" color="#FFF" intensity="0.6"></a-light>
+        <a-light type="directional" position="-1 2 1" intensity="0.8" castShadow="true"></a-light>
+
+        <!-- L'Avatar 3D (Composé de blocs primaires) -->
+        <a-entity id="avatar" position="0 1.5 -2.5">
+            <!-- Tête -->
+            <a-box id="avatar-head" color="#4CC3D9" depth="0.5" height="0.6" width="0.5" animation="property: position; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true; to: 0 0.05 0">
+                
+                <!-- Yeux -->
+                <a-sphere color="white" radius="0.08" position="-0.12 0.1 0.26">
+                    <a-sphere color="black" radius="0.03" position="0 0 0.07"></a-sphere>
+                </a-sphere>
+                <a-sphere color="white" radius="0.08" position="0.12 0.1 0.26">
+                    <a-sphere color="black" radius="0.03" position="0 0 0.07"></a-sphere>
+                </a-sphere>
+
+                <!-- Bouche (Pour le Lip-Sync) -->
+                <a-box id="avatar-mouth" color="#222" depth="0.1" height="0.02" width="0.15" position="0 -0.15 0.26"></a-box>
+            </a-box>
+        </a-entity>
+
+        <!-- Environnement de présentation -->
+        <a-cylinder position="0 0.75 -2.5" radius="0.8" height="1.5" color="#FFC65D"></a-cylinder>
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4" shadow="receive: true"></a-plane>
+
+        <!-- Caméra de l'utilisateur -->
+        <a-entity position="0 1.6 0">
+            <a-camera look-controls wasd-controls="enabled: false"></a-camera>
+        </a-entity>
+    </a-scene>
+
+    <!-- LOGIQUE JAVASCRIPT (IA + 3D) -->
+    <script>
+        // --- 1. Gestion du TTS et du Lip-Sync ---
+        const synth = window.speechSynthesis;
+        let ttsQueue = [];
+        let isSpeaking = false;
+        let mouthInterval;
+
+        // Animation procédurale de la bouche
+        function startMouthAnimation() {
+            if (mouthInterval) return;
+            const mouth = document.getElementById('avatar-mouth');
+            mouthInterval = setInterval(() => {
+                const scaleY = 1 + Math.random() * 4; // Étire la bouche verticalement
+                mouth.setAttribute('scale', `1 ${scaleY} 1`);
+            }, 100);
+        }
+
+        function stopMouthAnimation() {
+            clearInterval(mouthInterval);
+            mouthInterval = null;
+            document.getElementById('avatar-mouth').setAttribute('scale', '1 1 1');
+        }
+
+        // Lecteur de file d'attente vocale
+        function processTTSQueue() {
+            if (isSpeaking || ttsQueue.length === 0) return;
+            
+            isSpeaking = true;
+            const textToSpeak = ttsQueue.shift();
+            
+            // Affichage des sous-titres
+            const subtitleDiv = document.getElementById('subtitle');
+            subtitleDiv.style.display = 'block';
+            subtitleDiv.innerText = textToSpeak;
+
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = 'fr-FR'; // Voix française
+            utterance.rate = 1.1; // Légèrement plus rapide
+            
+            utterance.onstart = () => startMouthAnimation();
+            
+            utterance.onend = () => {
+                stopMouthAnimation();
+                isSpeaking = false;
+                if (ttsQueue.length === 0) subtitleDiv.style.display = 'none';
+                processTTSQueue();
+            };
+            
+            utterance.onerror = () => {
+                stopMouthAnimation();
+                isSpeaking = false;
+                processTTSQueue();
+            };
+
+            synth.speak(utterance);
+        }
+
+        // --- 2. Gestion des Émotions (Changement de couleur 3D) ---
+        function setAvatarEmotion(emotion) {
+            document.getElementById('emotion-display').innerText = `Émotion: ${emotion}`;
+            const head = document.getElementById('avatar-head');
+            
+            // Mapping des couleurs basiques selon l'émotion
+            const colorMap = {
+                'Joie': '#FFD700',      // Or
+                'Colere': '#ef4444',    // Rouge
+                'Frustration_Ouverte': '#f97316', // Orange
+                'Tristesse': '#3b82f6', // Bleu
+                'Peur': '#8b5cf6',      // Violet
+                'Surprise': '#10b981',  // Vert
+                'Neutre': '#4CC3D9',    // Cyan (Défaut)
+                'Reflexion': '#94a3b8'  // Gris
+            };
+
+            const newColor = colorMap[emotion] || colorMap['Neutre'];
+            head.setAttribute('color', newColor);
+            
+            // Petite animation de "saut" quand l'émotion change
+            head.setAttribute('animation__bounce', `property: position; dir: alternate; dur: 150; easing: easeInOutQuad; loop: 1; to: 0 0.2 0`);
+        }
+
+
+        // --- 3. Appels API (FastAPI) ---
+        async function loadPersona() {
+            const fileInput = document.getElementById('personaFile');
+            const statusLabel = document.getElementById('status');
+
+            if (fileInput.files.length === 0) {
+                statusLabel.innerText = '❌ Veuillez sélectionner un fichier JSON.';
+                statusLabel.style.color = 'red';
+                return;
+            }
+
+            try {
+                const fileText = await fileInput.files[0].text();
+                const personaJson = JSON.parse(fileText);
+                statusLabel.innerText = 'Envoi au serveur...';
+
+                const response = await fetch('http://localhost:8000/load-persona', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(personaJson)
+                });
+
+                if(response.ok) {
+                    const name = personaJson.persona?.name || "Inconnu";
+                    statusLabel.innerText = `✅ Prêt (${name})`;
+                    statusLabel.style.color = 'green';
+                    setAvatarEmotion('Joie'); // Petit feedback visuel
+                } else {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+            } catch(e) {
+                statusLabel.innerText = '❌ Erreur de chargement.';
+                statusLabel.style.color = 'red';
+                console.error(e);
+            }
+        }
+
+        async function sendChatMessage() {
+            const messageInput = document.getElementById('userMessage');
+            const message = messageInput.value.trim();
+            if(!message) return;
+
+            messageInput.value = ''; // On vide le champ
+            setAvatarEmotion('Reflexion'); // L'IA réfléchit
+
+            try {
+                const response = await fetch('http://localhost:8000/chat/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_message: message, history: [] })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = '';
+                let sentenceBuffer = ''; // Buffer pour accumuler les mots avant de parler
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) {
+                        // S'il reste du texte à la fin du stream, on le lit
+                        if (sentenceBuffer.trim().length > 0) {
+                            ttsQueue.push(sentenceBuffer.trim());
+                            processTTSQueue();
+                        }
+                        break;
+                    }
+
+                    buffer += decoder.decode(value, {stream: true});
+                    let packets = buffer.split('\n\n');
+                    buffer = packets.pop(); 
+
+                    for (let line of packets) {
+                        if (line.trim() === '') continue;
+                        
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                
+                                if (data.type === 'emotion') {
+                                    setAvatarEmotion(data.value);
+                                } 
+                                else if (data.type === 'text') {
+                                    sentenceBuffer += data.value;
+                                    
+                                    // Si on rencontre une ponctuation finale, on envoie la phrase au TTS
+                                    if (/[.?!:]/.test(data.value)) {
+                                        ttsQueue.push(sentenceBuffer.trim());
+                                        sentenceBuffer = '';
+                                        processTTSQueue(); // Lance la lecture si ce n'est pas déjà en cours
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("Erreur de parsing:", e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Crash stream:", error);
+                setAvatarEmotion('Tristesse');
+            }
+        }
+    </script>
+</body>
+</html>
