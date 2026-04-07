@@ -2,3 +2,8 @@ pptx/
 outputs/
 uploads/
 *.pptx
+
+# .env files
+.env.*
+.env*
+.env
