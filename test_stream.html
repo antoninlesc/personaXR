@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>Persona XR - Hybrid Dashboard</title>
-    <!-- Importation de A-Frame pour la 3D -->
+    <!-- A-Frame for 3D -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <style>
         :root { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --accent: #3b82f6; --emotion: #f43f5e; }
         body { font-family: 'Consolas', 'Courier New', monospace; background-color: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* --- LAYOUT PRINCIPAL --- */
+        /* --- LAYOUT --- */
         #scene-container { flex: 1.5; position: relative; border-right: 2px solid #334155; }
         #ui-container { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow-y: auto; background-color: var(--bg); }
         
-        /* --- PANNEAUX UI --- */
+        /* --- UI PANELS --- */
         .panel { background: var(--panel); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #334155; }
-        h2 { margin-top: 0; font-size: 1.1rem; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        h2 { margin-top: 0; font-size: 1.1rem; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; }
         
         .upload-zone { border: 2px dashed #475569; padding: 12px; text-align: center; border-radius: 8px; cursor: pointer; margin-bottom: 10px; transition: border-color 0.2s; font-size: 0.9rem;}
         .upload-zone:hover { border-color: var(--accent); }
@@ -35,13 +35,17 @@
         .emotion-tag { display: inline-block; background: rgba(244, 63, 94, 0.2); color: var(--emotion); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 4px; font-weight: bold; border: 1px solid rgba(244, 63, 94, 0.4); }
         .text-content { white-space: pre-wrap; }
         
-        .input-group { display: flex; gap: 10px; }
+        .input-group { display: flex; gap: 10px; align-items: center; }
         input[type="text"] { flex-grow: 1; background: #0b1120; border: 1px solid #334155; color: white; padding: 10px; border-radius: 4px; font-family: inherit; outline: none; }
         input[type="text"]:focus { border-color: var(--accent); }
         
         .typing-indicator { color: #94a3b8; font-style: italic; font-size: 0.8rem; display: none; }
         
-        /* Slider hauteur */
+        /* Checkbox switch for TTS testing */
+        .toggle-container { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; cursor: pointer; }
+        .toggle-container input { cursor: pointer; }
+        
+        /* Height Slider */
         .slider-container { background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 10px; }
         .slider-label { color: #94a3b8; font-size: 0.85rem; font-weight: bold; margin-bottom: 8px; display: block; }
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; }
@@ -51,55 +55,49 @@
 </head>
 <body>
 
-    <!-- PARTIE GAUCHE : SCÈNE 3D WEBXR -->
+    <!-- LEFT PANEL: 3D SCENE -->
     <div id="scene-container">
-        <!-- 'embedded' permet à la scène de rester dans sa div -->
         <a-scene embedded background="color: #21252d">
-            
-            <!-- Éclairage du salon -->
+            <!-- Lighting -->
             <a-light type="ambient" color="#fff" intensity="0.5"></a-light>
             <a-light type="directional" position="2 4 3" intensity="0.7" castShadow="true"></a-light>
             <a-light type="point" position="-2 2 -2" color="#3b82f6" intensity="0.4"></a-light>
 
-            <!-- Le Salon -->
+            <!-- Room -->
             <a-entity id="room">
                 <a-plane rotation="-90 0 0" width="8" height="8" color="#4a4a4a" shadow="receive: true"></a-plane>
                 <a-plane position="0 2 -4" width="8" height="4" color="#2c3e50" shadow="receive: true"></a-plane>
                 <a-circle position="0 0.01 -1.5" radius="1.5" color="#e74c3c" rotation="-90 0 0"></a-circle>
             </a-entity>
 
-            <!-- Ton Avatar (dynamique) - Centré à Z = -1.2 pour un face-à-face -->
+            <!-- Avatar -->
             <a-entity id="my-avatar" position="0 0 -1.2" scale="1 1 1" shadow="cast: true">
-                <!-- Placeholder visuel -->
                 <a-box id="avatar-placeholder" position="0 0.9 0" height="1.8" width="0.5" depth="0.3" color="#3b82f6" wireframe="true" opacity="0.6"></a-box>
             </a-entity>
 
-            <!-- Caméra - Centrée à Z = 0 avec contrôles WASD activés -->
+            <!-- Camera -->
             <a-entity position="0 1.6 0">
                 <a-camera look-controls="pointerLockEnabled: false" wasd-controls="acceleration: 10"></a-camera>
             </a-entity>
         </a-scene>
     </div>
 
-    <!-- PARTIE DROITE : L'INTERFACE DU CERVEAU -->
+    <!-- RIGHT PANEL: UI -->
     <div id="ui-container">
         
         <div class="panel">
             <h2>1. Configuration</h2>
             
-            <!-- UPLOAD DU FICHIER GLB -->
             <label class="upload-zone" id="glb-upload-zone">
                 <input type="file" id="glb-file-input" accept=".glb,.gltf">
                 <div id="glb-upload-text">1. Charger l'Avatar 3D (.glb)</div>
             </label>
 
-            <!-- AJUSTEMENT HAUTEUR -->
             <div class="slider-container">
                 <span class="slider-label">Ajustement Hauteur</span>
                 <input type="range" id="height-slider" min="-1.5" max="2.5" step="0.05" value="0">
             </div>
 
-            <!-- UPLOAD DU JSON -->
             <label class="upload-zone" id="json-upload-zone">
                 <input type="file" id="file-input" accept=".json">
                 <div id="upload-text">2. Charger la Persona (.json)</div>
@@ -114,11 +112,14 @@
         </div>
 
         <div class="panel" style="flex-grow: 1;">
-            <h2>2. Flux d'Interaction</h2>
+            <h2>
+                2. Flux d'Interaction
+                <label class="toggle-container">
+                    <input type="checkbox" id="mute-tts"> Mute TTS (Test Vitesse)
+                </label>
+            </h2>
             
-            <div id="chat-window">
-                <!-- Messages -->
-            </div>
+            <div id="chat-window"></div>
             
             <div class="typing-indicator" id="typing">L'IA réfléchit...</div>
             
@@ -129,7 +130,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE LOGIQUE : MOTEUR LLM + ANIMATION 3D -->
+    <!-- LOGIC SCRIPT -->
     <script>
         const stateMonitor = document.getElementById('state-monitor');
         function log(msg, type="INFO") {
@@ -139,47 +140,36 @@
             stateMonitor.scrollTop = stateMonitor.scrollHeight;
         }
 
-        // --- 1. Gestion de la 3D et Upload de l'Avatar ---
+        // --- 1. 3D & Avatar Logic ---
         const avatarEl = document.getElementById('my-avatar');
         const glbFileInput = document.getElementById('glb-file-input');
         const glbUploadText = document.getElementById('glb-upload-text');
         const heightSlider = document.getElementById('height-slider');
         let modelMesh = null;
 
-        // Mise à jour de la hauteur en temps réel
         heightSlider.addEventListener('input', (e) => {
-            const yOffset = e.target.value;
-            avatarEl.setAttribute('position', `0 ${yOffset} -1.2`);
+            avatarEl.setAttribute('position', `0 ${e.target.value} -1.2`);
         });
 
-        // Lors du chargement du fichier 3D
         glbFileInput.addEventListener('change', (e) => {
             if(e.target.files.length > 0) {
                 const file = e.target.files[0];
                 glbUploadText.innerText = `🧍 ${file.name} sélectionné.`;
-                
-                // Cacher le placeholder (la boîte bleue filaire)
                 const placeholder = document.getElementById('avatar-placeholder');
                 if(placeholder) placeholder.setAttribute('visible', 'false');
                 
-                // Création d'une URL temporaire pointant vers le fichier local
                 const objectURL = URL.createObjectURL(file);
-                
-                // On met à jour l'entité 3D en utilisant le format url() sécurisé
                 avatarEl.removeAttribute('gltf-model'); 
                 avatarEl.setAttribute('gltf-model', `url(${objectURL})`);
-                
-                log(`[3D] Chargement du nouveau modèle : ${file.name}...`);
+                log(`[3D] Chargement : ${file.name}...`);
             }
         });
 
-        // Attend que l'avatar soit chargé pour récupérer son Mesh
         avatarEl.addEventListener('model-loaded', () => {
             modelMesh = avatarEl.getObject3D('mesh');
-            log("[3D] Modèle 3D compilé et prêt à l'animation !");
+            log("[3D] Modèle prêt !");
         });
 
-        // Fonction magique pour modifier une blendshape par son nom
         function setBlendshape(shapeName, value) {
             if (!modelMesh) return;
             modelMesh.traverse((node) => {
@@ -192,7 +182,6 @@
             });
         }
 
-        // Mapping des émotions
         function applyEmotionToAvatar(emotion) {
             setBlendshape('Smile', 0);
             setBlendshape('Angry', 0);
@@ -208,10 +197,12 @@
             }
         }
 
-        // --- 2. Gestion du Text-To-Speech (Kokoro Neural TTS + Fallback) ---
+        // --- 2. TTS Logic ---
         let ttsQueue = [];
         let isSpeaking = false;
         let mouthInterval;
+        let isKokoroDown = false; // Optimisation: if Kokoro fails once, don't try again
+        const muteTTSCheckbox = document.getElementById('mute-tts');
 
         function startLipSync() {
             if (mouthInterval) return;
@@ -231,34 +222,43 @@
         async function processTTS() {
             if (isSpeaking || ttsQueue.length === 0) return;
             
-            isSpeaking = true;
             const textToSpeak = ttsQueue.shift();
+
+            // Mute mode checking
+            if (muteTTSCheckbox.checked) {
+                log(`[TEST MUTE] Ignoré : "${textToSpeak.substring(0, 15)}..."`, "WARN");
+                processTTS(); // Go to next item immediately
+                return;
+            }
+
+            isSpeaking = true;
             
             try {
-                // TENTATIVE 1 : Appel à l'API Locale Kokoro (si lancée via Docker)
-                log(`[TTS] Génération audio Kokoro pour : "${textToSpeak.substring(0, 15)}..."`);
-                
+                if(isKokoroDown) throw new Error("Skipping Kokoro");
+
+                // Tentative Kokoro avec un Timeout manuel pour éviter d'attendre 20s
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 secondes max
+
+                log(`[TTS] Kokoro attempt...`);
                 const response = await fetch('http://localhost:8880/v1/audio/speech', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: 'kokoro',
-                        input: textToSpeak,
-                        voice: 'ff_siwis', // Excellente voix féminine française (change pour 'fm_gaston' pour un homme)
-                        response_format: 'mp3',
-                        speed: 1.0
-                    })
+                        model: 'kokoro', input: textToSpeak, voice: 'ff_siwis', response_format: 'mp3', speed: 1.0
+                    }),
+                    signal: controller.signal
                 });
-
-                if (!response.ok) throw new Error("Kokoro API non disponible");
+                
+                clearTimeout(timeoutId);
+                if (!response.ok) throw new Error("Kokoro failure");
                 
                 const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                playAudio(url, true);
+                playAudio(URL.createObjectURL(blob), true);
 
             } catch (error) {
-                // TENTATIVE 2 : Fallback de survie (Google) si Kokoro échoue/n'est pas lancé
-                log("[WARN] Kokoro introuvable. Bascule sur Google TTS.", "WARN");
+                isKokoroDown = true; // Mark as down to skip next time
+                log("[WARN] Fallback Google TTS.", "WARN");
                 const url = `https://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=${encodeURIComponent(textToSpeak)}&tl=fr`;
                 playAudio(url, false);
             }
@@ -266,33 +266,26 @@
 
         function playAudio(audioUrl, isBlob) {
             const audio = new Audio(audioUrl);
-            
             audio.onplay = () => startLipSync();
-            
             audio.onended = () => {
                 stopLipSync();
                 isSpeaking = false;
-                if (isBlob) URL.revokeObjectURL(audioUrl); // Nettoie la mémoire
+                if (isBlob) URL.revokeObjectURL(audioUrl);
                 processTTS();
             };
-            
             audio.onerror = () => {
-                console.warn("Erreur de lecture audio.");
                 stopLipSync();
                 isSpeaking = false;
                 processTTS();
             };
-
-            audio.play().catch(e => {
-                console.error("Impossible de lire l'audio :", e);
+            audio.play().catch(() => {
                 stopLipSync();
                 isSpeaking = false;
                 processTTS();
             });
         }
 
-
-        // --- 3. Logique de l'Interface et Appels API ---
+        // --- 3. Chat Logic & API Calls ---
         const chatWindow = document.getElementById('chat-window');
         const uploadText = document.getElementById('upload-text');
         const fileInput = document.getElementById('file-input');
@@ -303,29 +296,22 @@
         });
 
         async function loadPersona() {
-            if(fileInput.files.length === 0) { log("Veuillez sélectionner un fichier JSON Persona.", "ERR"); return; }
-            if(glbFileInput.files.length === 0) { log("Info : Aucun avatar 3D chargé, hologramme utilisé.", "WARN"); }
+            if(fileInput.files.length === 0) { log("Please select JSON.", "ERR"); return; }
             
             try {
-                const file = fileInput.files[0];
-                const jsonText = await file.text();
-                const personaData = JSON.parse(jsonText);
-                
-                log("Envoi au moteur sémantique FastAPI...");
+                const personaData = JSON.parse(await fileInput.files[0].text());
+                log("Compilation backend...");
                 
                 const response = await fetch('http://localhost:8000/load-persona', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(personaData)
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(personaData)
                 });
 
                 if(response.ok) {
-                    const name = personaData.persona?.name || "Inconnu";
-                    log(`Cerveau compilé avec succès. Persona: ${name}`);
+                    log(`Cerveau prêt. Persona chargé.`);
                     btnSend.disabled = false;
                     applyEmotionToAvatar('Joie'); 
                 } else {
-                    log(`Erreur serveur: ${response.status}`, "ERR");
+                    log(`Erreur: ${response.status}`, "ERR");
                 }
             } catch (err) {
                 log(`Crash: ${err.message}`, "ERR");
@@ -349,19 +335,19 @@
             const textSpan = aiBubble.querySelector('.text-content');
 
             let sentenceBuffer = '';
+            
+            // Performance tracking
+            const startTime = Date.now();
+            let firstTokenReceived = false;
 
             try {
                 const response = await fetch('http://localhost:8000/chat/stream', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_message: message, history: [] })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_message: message, history: [] })
                 });
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder("utf-8");
                 let buffer = '';
-
-                document.getElementById('typing').style.display = 'none';
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -381,16 +367,25 @@
                         if (line.startsWith('data: ')) {
                             try {
                                 const data = JSON.parse(line.substring(6));
+                                
+                                // Benchmark Log
+                                if (!firstTokenReceived) {
+                                    firstTokenReceived = true;
+                                    document.getElementById('typing').style.display = 'none';
+                                    log(`[BENCHMARK] Temps de réflexion LLM : ${(Date.now() - startTime) / 1000}s`);
+                                }
+
                                 if (data.type === 'emotion') {
                                     emotionSpan.innerText = `{${data.value}}`;
                                     emotionSpan.style.display = 'inline-block';
-                                    applyEmotionToAvatar(data.value); // L'AVATAR RÉAGIT ICI
+                                    applyEmotionToAvatar(data.value);
                                 } else if (data.type === 'text') {
                                     const word = data.value;
                                     textSpan.textContent += word;
                                     sentenceBuffer += word;
                                     chatWindow.scrollTop = chatWindow.scrollHeight;
 
+                                    // Push to TTS when a sentence ends
                                     if (/[.?!:]/.test(word)) {
                                         ttsQueue.push(sentenceBuffer.trim());
                                         sentenceBuffer = '';
@@ -426,7 +421,6 @@
                 <span class="text-content"></span>
             `;
             chatWindow.appendChild(div);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
             return div;
         }
     </script>

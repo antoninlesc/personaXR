@@ -68,6 +68,7 @@ def generate_system_prompt(data: PersonaJSON) -> str:
         </triggers>
 
         <emotion_protocol>
+        REGLE CRITIQUE : Tu dois COMMENCER ta reponse DIRECTEMENT par la balise <answer>. N'ecris ABSOLUMENT RIEN avant (aucune reflexion, aucun contexte).
         Tu es obligé de commencer l'intégralité de tes réponses dans <answer> par une balise d'état émotionnel choisie EXCLUSIVEMENT parmi : {UNITY_SUPPORTED_EMOTIONS}.
         </emotion_protocol>
 

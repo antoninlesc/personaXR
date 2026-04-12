@@ -7,3 +7,6 @@ uploads/
 .env.*
 .env*
 .env
+
+__pycache__/
+*.pyc
