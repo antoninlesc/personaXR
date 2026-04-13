@@ -2,7 +2,6 @@
 import { ref } from 'vue';
 import Form from './components/Form.vue';
 import DashboardXR from './components/DashboardXR.vue';
-
 // Navigation state: 'form' or 'xr'
 const currentView = ref('form');
 </script>
@@ -15,13 +14,13 @@ const currentView = ref('form');
         :class="{ active: currentView === 'form' }" 
         @click="currentView = 'form'"
       >
-        1. Formulaire & Parsing
+        1. Form & Parsing
       </button>
       <button 
         :class="{ active: currentView === 'xr' }" 
         @click="currentView = 'xr'"
       >
-        2. Dashboard WebXR (Temps Réel)
+        2. Dashboard WebXR
       </button>
     </nav>
 

@@ -1,4 +1,4 @@
-import { API } from "./config_api";
+import { API } from "./config";
 
 export async function connectWebRTC(mediaElementRef) {
     // Create a new RTCPeerConnection
