@@ -1,14 +1,11 @@
 import httpx
 import json
 import re
-import os
 import asyncio
 import time
-from typing import AsyncGenerator, List, Dict
-from fastapi import HTTPException
+from typing import AsyncGenerator
 from google import genai
 from google.genai import types
-from dotenv import load_dotenv
 from app.core.config import settings
 
 class BaseLLMService:
