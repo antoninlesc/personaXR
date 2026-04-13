@@ -6,6 +6,11 @@ export async function connectWebRTC(mediaElementRef) {
         iceServers: [],
     });
 
+    const dataChannel = pc.createDataChannel("pipecat");
+    dataChannel.addEventListener("message", (event) => {
+        // TODO : Handle incoming messages from the bot if needed (e.g., for text responses or control signals)
+        // console.log("Received message from bot:", event.data);
+    });
     // Request microphone access and add the audio track to the connection
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -36,7 +41,7 @@ export async function connectWebRTC(mediaElementRef) {
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ offer })
+        body: JSON.stringify({ sdp: offer.sdp, type: offer.type })
     });
 
     if (!response.ok) {

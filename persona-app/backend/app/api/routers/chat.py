@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
-from app.schemas import PersonaJSON, ChatStreamRequest
+from app.schemas.schemas import PersonaJSON, ChatStreamRequest
 from app.services.brain.system_prompt_gen import generate_system_prompt
 from app.services.brain.llm_service import get_llm_service
 from app.api.dependencies import get_system_prompt, set_system_prompt

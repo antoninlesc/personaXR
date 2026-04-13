@@ -1,5 +1,5 @@
 from typing import List
-from app.schemas import JourneyStep, PersonaJSON
+from app.schemas.schemas import JourneyStep, PersonaJSON
 
 UNITY_SUPPORTED_EMOTIONS = "{Neutre, Joie, Colere, Tristesse, Surprise, Degout, Peur, Reflexion}"
 

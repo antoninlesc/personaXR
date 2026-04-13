@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from aiortc import RTCPeerConnection, RTCSessionDescription
+from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 import asyncio
 from app.services.orchestration.bot_runner import run_bot
 
@@ -11,39 +11,19 @@ class WebRTCOffer(BaseModel):
     sdp: str
     type: str
 
-# Keep track of active peer connections
-peer_connections = set()
-
 @router.post("/connect")
 async def webrtc_connect(offer: WebRTCOffer):
     """
     Handles the WebRTC SDP Offer from the frontend,
     creates an RTCPeerConnection, and returns the SDP Answer.
     """
-    # 1. Create a new Peer Connection for this client
-    pc = RTCPeerConnection()
-    peer_connections.add(pc)
+    connection = SmallWebRTCConnection()
 
-    @pc.on("connectionstatechange")
-    async def on_connectionstatechange():
-        print(f"🌐 WebRTC Connection State: {pc.connectionState}")
-        if pc.connectionState in ["failed", "closed"]:
-            peer_connections.discard(pc)
+    await connection.initialize(sdp=offer.sdp, type=offer.type)
+    answer = connection.get_answer()
+    asyncio.create_task(run_bot(connection))
 
-    # 2. Parse the incoming offer from the frontend
-    session_description = RTCSessionDescription(sdp=offer.sdp, type=offer.type)
-    await pc.setRemoteDescription(session_description)
-
-    # 3. Create an answer
-    answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
-
-    # 4. Start the Pipecat orchestration logic in the background
-    # Pass the PeerConnection to Pipecat so it can attach its audio/video tracks
-    asyncio.create_task(run_bot(pc))
-
-    # 5. Send the answer back to the frontend to finalize the connection
     return JSONResponse({
-        "sdp": pc.localDescription.sdp,
-        "type": pc.localDescription.type
+        "sdp": answer.get("sdp"),
+        "type": answer.get("type")
     })

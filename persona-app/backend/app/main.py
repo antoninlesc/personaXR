@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import parser, chat
-from core.config import settings
+from .api.routers import parser, chat, webrtc
+from .core.config import settings
 
 app = FastAPI(title=settings.app_name)
 
@@ -17,7 +17,7 @@ app.add_middleware(
 # Import and include the routers
 app.include_router(parser.router)
 app.include_router(chat.router)
-
+app.include_router(webrtc.router)
 
 @app.get("/")
 async def health_check():
