@@ -1,6 +1,6 @@
 import { API } from "./config";
 
-export async function connectWebRTC(mediaElementRef) {
+export async function connectWebRTC(mediaElementRef, onMessageReceived) {
     // Create a new RTCPeerConnection
     const pc = new RTCPeerConnection({
         iceServers: [],
@@ -8,8 +8,12 @@ export async function connectWebRTC(mediaElementRef) {
 
     const dataChannel = pc.createDataChannel("pipecat");
     dataChannel.addEventListener("message", (event) => {
-        // TODO : Handle incoming messages from the bot if needed (e.g., for text responses or control signals)
-        // console.log("Received message from bot:", event.data);
+        try {
+            const data = JSON.parse(event.data);
+            if (onMessageReceived) onMessageReceived(data);
+        } catch (err) {
+            console.error("ERROR parsing message from data channel:", err);
+        }
     });
     // Request microphone access and add the audio track to the connection
     try {
