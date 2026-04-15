@@ -12,8 +12,8 @@ const errorMsg = ref("");
 // State for chat and metrics
 const chatHistory = ref([]);
 const latencyMetrics = ref({
-    ttfs: { label: "1. STT (Whisper TTFS)", value: 0 }, // Time to First Sound (STT Delay)
-    ttfb: { label: "2. LLM (Llama TTFB)", value: 0 }  // Time to First Byte (LLM Delay)
+    ttfs: { label: "1. STT (Whisper BASE model TTFS)", value: 0 }, // Time to First Sound (STT Delay)
+    ttfb: { label: "2. LLM (Llama 3 TTFB)", value: 0 }  // Time to First Byte (LLM Delay)
 });
 
 // This function is called every time Python sends a message via the Data Channel
@@ -108,7 +108,7 @@ async function scrollToBottom() {
         <h2>Scène 3D en Temps Réel</h2>
         <!-- Placeholder for the 3D scene rendered by Pipecat -->
         <div class="placeholder">
-            🎬 La scène 3D de Pipecat s'affichera ici.
+            scène 3D.
         </div>
     </div>
     
@@ -122,7 +122,7 @@ async function scrollToBottom() {
             :disabled="isConnected || isConnecting"
         >
             <span v-if="isConnecting">Connexion en cours...</span>
-            <span v-else-if="isConnected">🟢 Connecté (Micro Actif)</span>
+            <span v-else-if="isConnected">🟢 Connecté</span>
             <span v-else>Démarrer la conversation</span>
         </button>
         <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
