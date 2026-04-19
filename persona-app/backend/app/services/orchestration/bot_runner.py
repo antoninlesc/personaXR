@@ -8,7 +8,7 @@ from pipecat.processors.aggregators.llm_response_universal import LLMContextAggr
 
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.services.ollama.llm import OLLamaLLMService
-from pipecat.services.piper import PiperTTSService
+from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 from pipecat.transports.base_transport import TransportParams

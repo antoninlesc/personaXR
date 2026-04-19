@@ -10,5 +10,4 @@ uploads/
 
 __pycache__/
 *.pyc
-.onnx*
-.onnx
+*.onnx*
