@@ -11,3 +11,5 @@ uploads/
 __pycache__/
 *.pyc
 *.onnx*
+
+.venv/
