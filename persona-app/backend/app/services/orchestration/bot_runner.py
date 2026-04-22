@@ -152,7 +152,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
 
     # 4. Task Runner
     task = PipelineTask(pipeline)
-    runner = PipelineRunner()
+    runner = PipelineRunner(handle_sigint=False)
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
