@@ -26,6 +26,7 @@ class FilterThinkingProcessor(FrameProcessor):
     so the TTS doesn't speak the internal reasoning.
     """
     async def process_frame(self, frame, direction: FrameDirection):
+        await super().process_frame(frame, direction)
         if isinstance(frame, TextFrame):
             # If the text contains the thinking block, we split and keep only the answer
             if "Thinking Process:" in frame.text:
@@ -104,8 +105,8 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         llm = OpenAILLMService(
             api_key="not-needed-for-vllm", 
             base_url="http://localhost:8000/v1",
-            model="qwen-3.5-27b",
             settings=OpenAILLMService.Settings(
+                model="qwen-3.5-27b",
                 temperature=0.7
             )
         )

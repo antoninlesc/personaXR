@@ -19,6 +19,11 @@ async def load_persona(data: PersonaJSON):
 
     return {"status": "Persona loaded successfully.", "session_id": data.session_id}
 
+@router.post("/get-system-prompt")
+async def generate_system_prompt_endpoint():
+    system_prompt = get_system_prompt()
+    return {"system_prompt": system_prompt} 
+
 @router.post("/stream")
 async def chat_stream(request: ChatStreamRequest):
     system_prompt = get_system_prompt()

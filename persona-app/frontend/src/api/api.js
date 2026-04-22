@@ -32,13 +32,13 @@ export async function submitPersona(data) {
   return await res.json();
 }
 
-export async function loadPersona() {
+export async function loadPersona(data) {
   const res = await fetch(`${API}/chat/load-persona`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({data}),
     });
   if (!res.ok) {
     const txt = await res.text();

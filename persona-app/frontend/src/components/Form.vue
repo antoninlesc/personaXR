@@ -355,9 +355,10 @@
                     <p>Voici le résultat généré à partir de vos modifications.</p>
                 </div>
                 <div class="export-actions">
-                    <button @click="generateJSON" class="btn-secondary">Actualiser</button>
-                    <button @click="copyToClipboard" class="btn-secondary">Copier</button>
-                    <button @click="downloadJSON" class="btn-primary">Télécharger .json</button>
+                    <button @click="generateJSON" class="btn-secondary">Reload</button>
+                    <button @click="copyToClipboard" class="btn-secondary">Copy</button>
+                    <button @click="downloadJSON" class="btn-primary">Download .json</button>
+                    <button @click="loadPersonaToBackend" class="btn-primary">Load Persona</button> 
                 </div>
             </div>
 
@@ -371,7 +372,7 @@
 
 <script setup lang ="ts">
 import { ref, watch } from "vue";
-import { parsePptx } from "../api/api.js";
+import { parsePptx, loadPersona } from "../api/api.js";
 
 interface Action {
     id: string;
@@ -443,6 +444,19 @@ const draggingLabel = ref<{
     startOffsetY: number 
 } | null>(null);
 
+async function loadPersonaToBackend() {
+    try {
+        const response = await loadPersona(jsonOutput.value);
+        
+        if (response.ok) {
+            alert("Persona chargé dans le cerveau du bot !");
+        } else {
+            throw new Error("Erreur serveur");
+        }
+    } catch (err: any) {
+        alert("Erreur lors du chargement : " + err.message);
+    }
+}
 function generateJSON() {
     if (!data.value) return;
 
