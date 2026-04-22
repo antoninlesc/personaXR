@@ -17,7 +17,7 @@ async def load_persona(data: PersonaJSON):
     # Save to the memory storage (for POC purposes)
     set_system_prompt(system_prompt=system_prompt)
 
-    return {"status": "Persona loaded successfully.", "session_id": data.session_id}
+    return {"status": "Persona loaded successfully."}
 
 @router.post("/get-system-prompt")
 async def generate_system_prompt_endpoint():
