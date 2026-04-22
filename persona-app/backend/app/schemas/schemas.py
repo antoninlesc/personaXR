@@ -21,9 +21,16 @@ class PersonaDetails(BaseModel):
     expectations: Optional[str] = "Attentes standards."
     frustrations: Optional[str] = "Aucune frustration spécifique."
 
+class MetaDataJson(BaseModel):
+    generated_at: str = ""
+    app_version: str = ""
+
 class PersonaJSON(BaseModel):
+    meta: MetaDataJson
     persona: PersonaDetails
     journey: List[JourneyStep] = Field(default_factory=list)
+
+
 
 class Message(BaseModel):
     role: str

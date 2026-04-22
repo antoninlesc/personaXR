@@ -457,6 +457,7 @@ async function loadPersonaToBackend() {
         alert("Erreur lors du chargement : " + err.message);
     }
 }
+
 function generateJSON() {
     if (!data.value) return;
 

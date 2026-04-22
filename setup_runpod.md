@@ -29,21 +29,14 @@ sudo apt-get install vim
 Doc found on https://huggingface.co/QuantTrio/Qwen3.5-27B-AWQ
 
 ```properties
-vllm serve \
-    QuantTrio/Qwen3.5-27B-AWQ \
-    --served-model-name "qwen-3.5-27b" \
-    --swap-space 16 \
-    --max-num-seqs 32 \
-    --max-model-len 8192 \
-    --gpu-memory-utilization 0.4 \
-    --tensor-parallel-size 2 \
-    --enable-auto-tool-choice \
-    --tool-call-parser qwen3_coder \
-    --reasoning-parser qwen3 \
-    --speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}' \
-    --trust-remote-code \
-    --host 0.0.0.0 \
-    --port 8000
+vllm serve QuantTrio/Qwen3.5-27B-AWQ
+     --served-model-name "qwen-3.5-27b"
+     --max-model-len 8192     
+     --gpu-memory-utilization 0.6     
+     --tensor-parallel-size 2     
+     --trust-remote-code     
+     --host 0.0.0.0     
+     --port 8000
 ```
 
 1. Tell Hugging Face to download the model files to your persistent storage
