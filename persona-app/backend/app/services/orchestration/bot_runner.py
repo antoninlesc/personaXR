@@ -1,7 +1,8 @@
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.task import PipelineTask
 from pipecat.pipeline.runner import PipelineRunner
-from pipecat.frames.frames import LLMRunFrame, EndFrame
+from pipecat.frames.frames import LLMRunFrame, EndFrame, TextFrame
+from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.services.whisper.stt import WhisperSTTService
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
@@ -9,6 +10,7 @@ from pipecat.processors.aggregators.llm_response_universal import LLMContextAggr
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.services.ollama.llm import OLLamaLLMService
 from pipecat.services.piper.tts import PiperTTSService
+from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 from pipecat.transports.base_transport import TransportParams
@@ -17,7 +19,24 @@ from pipecat.processors.audio.vad_processor import VADProcessor
 from app.api.dependencies import get_system_prompt
 from app.core.config import settings
 from app.services.orchestration.log_sender import WebRTCLogSender, SessionMetrics
-      
+
+class FilterThinkingProcessor(FrameProcessor):
+    """
+    Filters out the thinking process from Qwen 3.5 
+    so the TTS doesn't speak the internal reasoning.
+    """
+    async def process_frame(self, frame, direction: FrameDirection):
+        if isinstance(frame, TextFrame):
+            # If the text contains the thinking block, we split and keep only the answer
+            if "Thinking Process:" in frame.text:
+                clean_text = frame.text.split("\n\n")[-1]
+                await self.push_frame(TextFrame(clean_text))
+            else:
+                await self.push_frame(frame)
+        else:
+            await self.push_frame(frame, direction)
+
+
 async def run_bot(webrtc_connection: SmallWebRTCConnection):
     """
     Orchestrates the Pipecat pipeline.
@@ -68,8 +87,36 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         )
 
     else :
-        # TODO Runpod-specific service initializations would go here
-        raise NotImplementedError("Runpod environment is not yet implemented.")
+        # 1. VAD - Keep using Silero or use a GPU-based one if available
+        vad_analyzer = SileroVADAnalyzer()
+        vad_processor = VADProcessor(vad_analyzer=vad_analyzer)
+
+        # 2. STT - Use GPU for faster transcription on Runpod
+        stt = WhisperSTTService(
+            settings=WhisperSTTService.Settings(
+                model="distil-large-v3", # Faster on GPU
+                language="fr"
+            ),
+            device="cuda" # We use the GPU power of the Runpod
+        )
+
+        # 3. LLM - Connect to your local vLLM server
+        llm = OpenAILLMService(
+            api_key="not-needed-for-vllm", 
+            base_url="http://localhost:8000/v1",
+            model="qwen-3.5-27b",
+            settings=OpenAILLMService.Settings(
+                temperature=0.7
+            )
+        )
+
+        # 4. TTS - Replace Piper with a higher quality cloud TTS (Cartesia/ElevenLabs)
+        # or keep Piper for now if you want to stay 100% local
+        tts = PiperTTSService(
+            settings=PiperTTSService.Settings(
+                voice="fr_FR-siwis-medium"
+            )
+        )
     
     # Context setup
     messages = [
@@ -83,6 +130,9 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     log_sender_stt = WebRTCLogSender(webrtc_connection, session_metrics=session_metrics, role="stt")
     log_sender_llm = WebRTCLogSender(webrtc_connection, session_metrics=session_metrics, role="llm")
 
+    filter_thinking_processor = FilterThinkingProcessor()
+
+
     # Pipeline Configuration
     pipeline = Pipeline([
         transport.input(),                  # Receives audio stream from the browser
@@ -92,6 +142,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         log_sender_stt,                     # Sends transcriptions back to frontend for real-time display
         user_aggregator,                    # Maintains conversation context
         llm,                                # Generates text response (Logged for now),
+        filter_thinking_processor,          # Filters out the thinking process
         log_sender_llm,                     # Sends transcriptions and LLM responses back to frontend for real-time display
         tts,                                # Converts text response to audio (To be implemented)
         transport.output(),                 # Sends audio back (Will be connected to TTS soon)
