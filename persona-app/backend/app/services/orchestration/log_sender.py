@@ -60,7 +60,7 @@ class WebRTCLogSender(FrameProcessor):
                 self.session_metrics.llm_turn_calculated = stt_time 
                 
                 ttfb = time.time() - stt_time
-                print(f"🚀 [LATENCY] Custom LLM TTFB: {ttfb:.3f} sec")
+                print(f"[LATENCY] Custom LLM TTFB: {ttfb:.3f} sec")
                 
                 try:
                     metrics_msg = json.dumps({"type": "metrics", "data": {"ttfb": ttfb}})

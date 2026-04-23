@@ -13,3 +13,4 @@ __pycache__/
 *.onnx*
 
 .venv/
+log_output_vllm.log

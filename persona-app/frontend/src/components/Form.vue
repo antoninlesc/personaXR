@@ -446,13 +446,16 @@ const draggingLabel = ref<{
 
 async function loadPersonaToBackend() {
     try {
-        const response = await loadPersona(jsonOutput.value);
+
+        const payload = JSON.parse(jsonOutput.value);
+        const response = await loadPersona(payload);
         
-        if (response.ok) {
-            alert("Persona chargé dans le cerveau du bot !");
+        if (response) {
+            alert("Persona chargée avec succès dans le backend !");
         } else {
-            throw new Error("Erreur serveur");
+            alert("Erreur inattendue lors du chargement de la persona.");
         }
+
     } catch (err: any) {
         alert("Erreur lors du chargement : " + err.message);
     }
@@ -860,8 +863,6 @@ async function onFile(e: Event) {
         console.log("Données transformées pour l'UI:", data.value);
     }
     
-
-
   } catch (err: any) {
     error.value = "Erreur parsing: " + err.message;
   }

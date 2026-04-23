@@ -19,24 +19,8 @@ from pipecat.processors.audio.vad_processor import VADProcessor
 from app.api.dependencies import get_system_prompt
 from app.core.config import settings
 from app.services.orchestration.log_sender import WebRTCLogSender, SessionMetrics
-
-class FilterThinkingProcessor(FrameProcessor):
-    """
-    Filters out the thinking process from Qwen 3.5 
-    so the TTS doesn't speak the internal reasoning.
-    """
-    async def process_frame(self, frame, direction: FrameDirection):
-        await super().process_frame(frame, direction)
-        if isinstance(frame, TextFrame):
-            # If the text contains the thinking block, we split and keep only the answer
-            if "Thinking Process:" in frame.text:
-                clean_text = frame.text.split("\n\n")[-1]
-                await self.push_frame(TextFrame(clean_text))
-            else:
-                await self.push_frame(frame)
-        else:
-            await self.push_frame(frame, direction)
-
+from app.services.orchestration.sentence_processor import SentenceBoundaryProcessor
+from app.services.orchestration.filter_thinking_processor import FilterThinkingProcessor
 
 async def run_bot(webrtc_connection: SmallWebRTCConnection):
     """
@@ -132,6 +116,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     log_sender_llm = WebRTCLogSender(webrtc_connection, session_metrics=session_metrics, role="llm")
 
     filter_thinking_processor = FilterThinkingProcessor()
+    sentence_processor = SentenceBoundaryProcessor()
 
 
     # Pipeline Configuration
@@ -144,6 +129,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         user_aggregator,                    # Maintains conversation context
         llm,                                # Generates text response (Logged for now),
         filter_thinking_processor,          # Filters out the thinking process
+        sentence_processor,                 # Ensures natural sentence boundaries
         log_sender_llm,                     # Sends transcriptions and LLM responses back to frontend for real-time display
         tts,                                # Converts text response to audio (To be implemented)
         transport.output(),                 # Sends audio back (Will be connected to TTS soon)
