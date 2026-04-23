@@ -41,7 +41,8 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         params=TransportParams(
             audio_in_enabled=True,
             audio_out_enabled=True,
-            video_out_enabled=False
+            video_out_enabled=False,
+            ice_servers=[{"urls": "stun:stun.l.google.com:19302"}]
         )
     )
     if settings.environment == "dev":
@@ -90,7 +91,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
             api_key="not-needed-for-vllm", 
             base_url="http://localhost:8000/v1",
             settings=OpenAILLMService.Settings(
-                model="qwen-3.5-27b",
+                model="qwen-3-30b",
                 temperature=0.7
             )
         )
@@ -123,14 +124,14 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     pipeline = Pipeline([
         transport.input(),                  # Receives audio stream from the browser
         vad_processor,                      # Detects speech segments
-        log_sender_vad,                     # Sends VAD events back to frontend
+        #log_sender_vad,                     # Sends VAD events back to frontend
         stt,                                # Transcribes voice to text
-        log_sender_stt,                     # Sends transcriptions back to frontend for real-time display
+        #log_sender_stt,                     # Sends transcriptions back to frontend for real-time display
         user_aggregator,                    # Maintains conversation context
         llm,                                # Generates text response (Logged for now),
         #filter_thinking_processor,          # Filters out the thinking process
         sentence_processor,                 # Ensures natural sentence boundaries
-        log_sender_llm,                     # Sends transcriptions and LLM responses back to frontend for real-time display
+        #log_sender_llm,                     # Sends transcriptions and LLM responses back to frontend for real-time display
         tts,                                # Converts text response to audio (To be implemented)
         transport.output(),                 # Sends audio back (Will be connected to TTS soon)
         assistant_aggregator                # Updates context with assistant response

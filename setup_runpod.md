@@ -81,3 +81,24 @@ vllm serve QuantTrio/Qwen3.5-27B-AWQ \
      --host 0.0.0.0 \
      --port 8000
 ```
+
+
+
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer empty" \
+  -d '{
+    "model": "qwen-3-30b",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are Marcus, a ruthless Lead UX Designer. Always start your response with an XML emotion tag like <emotion>neutral</emotion>."
+      },
+      {
+        "role": "user",
+        "content": "Hey Marcus, what do you think about adding a pop-up to the homepage?"
+      }
+    ],
+    "max_tokens": 300,
+    "temperature": 0.7
+  }'

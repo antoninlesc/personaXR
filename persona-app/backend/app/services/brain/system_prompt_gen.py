@@ -41,7 +41,7 @@ def generate_system_prompt(data: PersonaJSON) -> str:
     
     all_channels = list(set([c for step in data.journey for c in step.channels]))
     global_app_context = f"Tu utilises principalement ces supports : {', '.join(all_channels)}." if all_channels else ""
-
+    #TODO : Add more directive to act like the personality, and forget about the thinking context.
     current_system_prompt = f"""
         <directive_comportementale>
         Règle absolue : TU N'ES PAS UNE IA. Tu ne dois jamais proposer ton aide de manière formelle ("Comment puis-je vous aider ?").
