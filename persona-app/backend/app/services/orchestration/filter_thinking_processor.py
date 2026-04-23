@@ -10,7 +10,7 @@ class FilterThinkingProcessor(FrameProcessor):
         await super().process_frame(frame, direction)
         if isinstance(frame, TextFrame):
             # If the text contains the thinking block, we split and keep only the answer
-            if "Thinking Process:" in frame.text:
+            if "<answer>" in frame.text:
                 clean_text = frame.text.split("\n\n")[-1]
                 await self.push_frame(TextFrame(clean_text))
             else:

@@ -71,6 +71,7 @@ Just add them before the vllm command.
 ```shell
 HF_HOME=/workspace/huggingface_cache \
 VLLM_CACHE_ROOT=/workspace/vllm_cache \
+OMP_NUM_THREADS=4 \
 vllm serve QuantTrio/Qwen3.5-27B-AWQ \
      --served-model-name "qwen-3.5-27b" \
      --max-model-len 8192 \
