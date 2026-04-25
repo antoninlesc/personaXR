@@ -41,8 +41,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         params=TransportParams(
             audio_in_enabled=True,
             audio_out_enabled=True,
-            video_out_enabled=False,
-            ice_servers=[{"urls": "stun:stun.l.google.com:19302"}]
+            video_out_enabled=False
         )
     )
     if settings.environment == "dev":
