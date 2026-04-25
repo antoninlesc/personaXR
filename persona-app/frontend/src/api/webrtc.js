@@ -39,7 +39,7 @@ export async function connectWebRTC(mediaElementRef, onMessageReceived) {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    
+
     await new Promise((resolve) => {
         if (pc.iceGatheringState === 'complete') {
             resolve();
@@ -59,7 +59,10 @@ export async function connectWebRTC(mediaElementRef, onMessageReceived) {
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ sdp: offer.sdp, type: offer.type })
+        body: JSON.stringify({ 
+            sdp: pc.localDescription.sdp, 
+            type: pc.localDescription.type 
+        })
     });
 
     if (!response.ok) {

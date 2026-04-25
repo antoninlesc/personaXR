@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     ollama_model_name: str = os.getenv("OLLAMA_MODEL_NAME", "llama3")
-    
+    #tailscale_ip: str = os.getenv("TAILSCALE_IP")
+
     # TODO: runpod specific settings (if needed in the future)
     
     class Config:
