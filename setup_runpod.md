@@ -102,3 +102,16 @@ curl http://localhost:8000/v1/chat/completions \
     "max_tokens": 300,
     "temperature": 0.7
   }'
+  
+  
+HF_HOME=/workspace/huggingface_cache \
+VLLM_CACHE_ROOT=/workspace/vllm_cache \
+vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
+     --served-model-name "qwen-3-30b" \
+     --max-model-len 8192 \
+     --gpu-memory-utilization 0.6 \
+     --tensor-parallel-size 2 \
+     --trust-remote-code \
+     --host 0.0.0.0 \
+     --port 8000
+```
