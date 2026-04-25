@@ -129,7 +129,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         user_aggregator,                    # Maintains conversation context
         llm,                                # Generates text response (Logged for now),
         #filter_thinking_processor,          # Filters out the thinking process
-        sentence_processor,                 # Ensures natural sentence boundaries
+        #sentence_processor,                 # Ensures natural sentence boundaries
         log_sender_llm,                     # Sends transcriptions and LLM responses back to frontend for real-time display
         tts,                                # Converts text response to audio (To be implemented)
         transport.output(),                 # Sends audio back (Will be connected to TTS soon)
