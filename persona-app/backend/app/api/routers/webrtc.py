@@ -37,6 +37,10 @@ async def webrtc_connect(offer: WebRTCOffer):
     sdp_str = re.sub(r"(a=candidate.* )\d+\.\d+\.\d+\.\d+( .*typ host)", rf"\g<1>{tailscale_ip}\g<2>", sdp_str)
     
     answer["sdp"] = sdp_str
+    print("===================================")
+    print("SDP Answer after Tailscale rewrite:")
+    print(answer["sdp"])
+    print("===================================")
     # ------------------------------------------
 
     asyncio.create_task(run_bot(connection))
