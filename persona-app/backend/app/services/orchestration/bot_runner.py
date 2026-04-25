@@ -126,14 +126,14 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         #log_sender_vad,                     # Sends VAD events back to frontend
         stt,                                # Transcribes voice to text
         #log_sender_stt,                     # Sends transcriptions back to frontend for real-time display
-        user_aggregator,                    # Maintains conversation context
-        llm,                                # Generates text response (Logged for now),
+        #user_aggregator,                    # Maintains conversation context
+        #llm,                                # Generates text response (Logged for now),
         #filter_thinking_processor,          # Filters out the thinking process
         #sentence_processor,                 # Ensures natural sentence boundaries
         log_sender_llm,                     # Sends transcriptions and LLM responses back to frontend for real-time display
         tts,                                # Converts text response to audio (To be implemented)
         transport.output(),                 # Sends audio back (Will be connected to TTS soon)
-        assistant_aggregator                # Updates context with assistant response
+        #assistant_aggregator                # Updates context with assistant response
     ])
 
     # 4. Task Runner
@@ -143,7 +143,8 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
         print("WebRTC stable : Client is connected.")
-        await task.queue_frames([LLMRunFrame()])
+        #await task.queue_frames([LLMRunFrame()])
+        await task.queue_frames([TextFrame("=========== Client connected. Starting pipeline... ===========")])
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
