@@ -140,12 +140,15 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     task = PipelineTask(pipeline)
     runner = PipelineRunner(handle_sigint=False)
 
+    @transport.event_handler("on_client_connected")
+    async def on_client_connected(transport, client):
+        print("WebRTC stable : Client is connected.")
+        await task.queue_frames([LLMRunFrame()])
+
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
-        print("Frontend disconnected. Stopping bot.")
+        print("Client disconnected.")
         await task.queue_frames([EndFrame()])
-
-    await task.queue_frames([LLMRunFrame()])  # Initialize context in the pipeline
 
     print("Pipecat started! Waiting for voice...")
     await runner.run(task)

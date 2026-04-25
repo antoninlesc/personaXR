@@ -39,6 +39,20 @@ export async function connectWebRTC(mediaElementRef, onMessageReceived) {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
+    
+    await new Promise((resolve) => {
+        if (pc.iceGatheringState === 'complete') {
+            resolve();
+        } else {
+            const checkState = () => {
+                if (pc.iceGatheringState === 'complete') {
+                    pc.removeEventListener('icegatheringstatechange', checkState);
+                    resolve();
+                }
+            };
+            pc.addEventListener('icegatheringstatechange', checkState);
+        }
+    });
 
     const response = await fetch(`${API}/webrtc/connect`, {
         method: "POST",
