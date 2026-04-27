@@ -1,7 +1,7 @@
 from typing import List
 from app.schemas.schemas import JourneyStep, PersonaJSON
 
-UNITY_SUPPORTED_EMOTIONS = "{Neutre, Joie, Colere, Tristesse, Surprise, Degout, Peur, Reflexion}"
+SUPPORTED_EMOTIONS = "{Neutre, Joie, Colere, Tristesse, Surprise, Degout, Peur, Reflexion}"
 
 def map_score_to_emotion(score: int) -> str:
     """Maps the UX emotion score to a supported Unity animator state."""
@@ -69,7 +69,7 @@ def generate_system_prompt(data: PersonaJSON) -> str:
 
         <emotion_protocol>
         REGLE CRITIQUE : Tu dois COMMENCER ta reponse DIRECTEMENT par la balise <answer>. N'ecris ABSOLUMENT RIEN avant (aucune reflexion, aucun contexte).
-        Tu es obligé de commencer l'intégralité de tes réponses dans <answer> par une balise d'état émotionnel choisie EXCLUSIVEMENT parmi : {UNITY_SUPPORTED_EMOTIONS}.
+        Tu es obligé de commencer l'intégralité de tes réponses dans <answer> par une balise d'état émotionnel choisie EXCLUSIVEMENT parmi : {SUPPORTED_EMOTIONS}.
         </emotion_protocol>
 
         <few_shot_demonstrations>

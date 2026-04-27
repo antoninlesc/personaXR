@@ -15,8 +15,6 @@ class SentenceBoundaryProcessor(FrameProcessor):
         self._boundary_pattern = re.compile(r'([.?!,;:…\n]+(?:\s|$))')
 
     async def process_frame(self, frame, direction: FrameDirection):
-        
-        await super().process_frame(frame, direction)
 
         if isinstance(frame, TextFrame):
             self._text_buffer += frame.text

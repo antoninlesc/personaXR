@@ -28,7 +28,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     Takes the WebRTC connection established by FastAPI and attaches media streams.
     """
     print("Initializing Pipecat Pipeline...")
-
+    print("VLLM Base URL:", settings.vllm_base_url)  # Debug print to verify config loading
     session_metrics = SessionMetrics()
 
     system_prompt = get_system_prompt()  # Retrieve the system prompt (can be set via API)
@@ -44,64 +44,34 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
             video_out_enabled=False
         )
     )
-    if settings.environment == "dev":
-        vad_analyzer = SileroVADAnalyzer()
-        vad_processor = VADProcessor(vad_analyzer=vad_analyzer)
+    
+    vad_analyzer = SileroVADAnalyzer()
+    vad_processor = VADProcessor(vad_analyzer=vad_analyzer)
 
-        stt = WhisperSTTService(
-            settings=WhisperSTTService.Settings(
-                model="small",
-                language="fr"
-            ),
-            device="cpu",
-            compute_type="int8"
-        )
+    stt = WhisperSTTService(
+        settings=WhisperSTTService.Settings(
+            model="small",
+            language="fr"
+        ),
+        device="cpu",
+        compute_type="int8"
+    )
         
-        llm = OLLamaLLMService(
-            settings=OLLamaLLMService.Settings(
-                model=settings.ollama_model_name,
-                temperature=0.7
-            ),
-            base_url=settings.ollama_base_url+"/v1"
+    llm = OpenAILLMService(
+        api_key="not-needed-for-vllm", 
+        base_url=settings.vllm_base_url,  # Use vLLM base URL from config
+        settings=OpenAILLMService.Settings(
+            model="qwen-3-30b",
+            temperature=0.7
         )
+    )
 
-        tts = PiperTTSService(
-            settings=PiperTTSService.Settings(
-                voice="fr_FR-siwis-medium"
-            )
+    # TODO Replace Piper with a higher quality cloud TTS (Cartesia/ElevenLabs)
+    tts = PiperTTSService(
+        settings=PiperTTSService.Settings(
+            voice="fr_FR-siwis-medium"
         )
-
-    else :
-        # 1. VAD - Keep using Silero or use a GPU-based one if available
-        vad_analyzer = SileroVADAnalyzer()
-        vad_processor = VADProcessor(vad_analyzer=vad_analyzer)
-
-        # 2. STT - Use GPU for faster transcription on Runpod
-        stt = WhisperSTTService(
-            settings=WhisperSTTService.Settings(
-                model="distil-large-v3", # Faster on GPU
-                language="fr"
-            ),
-            device="cuda" # We use the GPU power of the Runpod
-        )
-
-        # 3. LLM - Connect to your local vLLM server
-        llm = OpenAILLMService(
-            api_key="not-needed-for-vllm", 
-            base_url="http://localhost:8000/v1",
-            settings=OpenAILLMService.Settings(
-                model="qwen-3-30b",
-                temperature=0.7
-            )
-        )
-
-        # 4. TTS - Replace Piper with a higher quality cloud TTS (Cartesia/ElevenLabs)
-        # or keep Piper for now if you want to stay 100% local
-        tts = PiperTTSService(
-            settings=PiperTTSService.Settings(
-                voice="fr_FR-siwis-medium"
-            )
-        )
+    )
     
     # Context setup
     messages = [
@@ -126,14 +96,14 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         #log_sender_vad,                     # Sends VAD events back to frontend
         stt,                                # Transcribes voice to text
         #log_sender_stt,                     # Sends transcriptions back to frontend for real-time display
-        #user_aggregator,                    # Maintains conversation context
-        #llm,                                # Generates text response (Logged for now),
+        user_aggregator,                    # Maintains conversation context
+        llm,                                # Generates text response (Logged for now),
         #filter_thinking_processor,          # Filters out the thinking process
         #sentence_processor,                 # Ensures natural sentence boundaries
         log_sender_llm,                     # Sends transcriptions and LLM responses back to frontend for real-time display
         tts,                                # Converts text response to audio (To be implemented)
         transport.output(),                 # Sends audio back (Will be connected to TTS soon)
-        #assistant_aggregator                # Updates context with assistant response
+        assistant_aggregator                # Updates context with assistant response
     ])
 
     # 4. Task Runner
@@ -143,8 +113,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
         print("WebRTC stable : Client is connected.")
-        #await task.queue_frames([LLMRunFrame()])
-        await task.queue_frames([TextFrame("=========== Client connected. Starting pipeline... ===========")])
+        await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):

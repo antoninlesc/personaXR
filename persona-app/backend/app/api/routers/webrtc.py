@@ -1,5 +1,3 @@
-import re
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -23,26 +21,6 @@ async def webrtc_connect(offer: WebRTCOffer):
 
     await connection.initialize(sdp=offer.sdp, type=offer.type)
     answer = connection.get_answer()
-
-    # --- CORRECTIF TAILSCALE (SDP Rewrite) ---
-    sdp_str = answer.get("sdp")
-    tailscale_ip = "100.76.122.76"  # Ton IP Tailscale fixe du Runpod
-    
-    # 1. Remplacer l'IP dans la ligne de connexion globale
-    sdp_str = re.sub(r"(c=IN IP4 )\d+\.\d+\.\d+\.\d+", rf"\g<1>{tailscale_ip}", sdp_str)
-    
-    # 2. Remplacer l'IP dans les candidats ICE locaux générés par Python
-    sdp_str = re.sub(r"(\d+\.\d+\.\d+\.\d+)(.*typ host)", rf"{tailscale_ip}\2", sdp_str)
-    # Autre approche regex si la précédente rate selon le formatage exact :
-    sdp_str = re.sub(r"(a=candidate.* )\d+\.\d+\.\d+\.\d+( .*typ host)", rf"\g<1>{tailscale_ip}\g<2>", sdp_str)
-    
-    answer["sdp"] = sdp_str
-    print("===================================")
-    print("SDP Answer after Tailscale rewrite:")
-    print(answer["sdp"])
-    print("===================================")
-    # ------------------------------------------
-
     asyncio.create_task(run_bot(connection))
 
     return JSONResponse({

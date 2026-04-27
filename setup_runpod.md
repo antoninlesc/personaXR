@@ -115,3 +115,21 @@ vllm serve Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
      --host 0.0.0.0 \
      --port 8000
 ```
+
+curl -N -X POST "https://n8m6modr2tx3r0-8000.proxy.runpod.net/v1/chat/completions" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer ton-token-si-tu-en-as-mis-un" \
+     -d '{
+       "model": "qwen-3-30b",
+       "messages": [
+         {"role": "system", "content": "Tu es un assistant vocal rapide et concis."},
+         {"role": "user", "content": "Explique-moi le théorème de Pythagore en une phrase."}
+       ],
+       "stream": true,
+       "max_tokens": 100
+     }'
+
+curl -N -X POST "https://n8m6modr2tx3r0-8000.proxy.runpod.net/v1/chat/completions" ^
+-H "Content-Type: application/json" ^
+-H "Authorization: Bearer ton-token-si-tu-en-as-mis-un" ^
+-d "{\"model\": \"qwen-3-30b\", \"messages\": [{\"role\": \"system\", \"content\": \"Tu es un assistant vocal rapide et concis.\"}, {\"role\": \"user\", \"content\": \"Explique-moi le théorème de Pythagore en une phrase.\"}], \"stream\": true, \"max_tokens\": 100}"
