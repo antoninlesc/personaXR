@@ -2,13 +2,11 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.task import PipelineTask
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.frames.frames import LLMRunFrame, EndFrame, TextFrame
-from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.services.whisper.stt import WhisperSTTService
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
 
 from pipecat.audio.vad.silero import SileroVADAnalyzer
-from pipecat.services.ollama.llm import OLLamaLLMService
 from pipecat.services.piper.tts import PiperTTSService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
@@ -21,6 +19,8 @@ from app.core.config import settings
 from app.services.orchestration.log_sender import WebRTCLogSender, SessionMetrics
 from app.services.orchestration.sentence_processor import SentenceBoundaryProcessor
 from app.services.orchestration.filter_thinking_processor import FilterThinkingProcessor
+from app.services.orchestration.emotion_tag_processor import EmotionTagProcessor
+from app.services.orchestration.context_sliding_window_processor import ContextSlidingWindowProcessor
 
 async def run_bot(webrtc_connection: SmallWebRTCConnection):
     """
@@ -87,6 +87,8 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
 
     filter_thinking_processor = FilterThinkingProcessor()
     sentence_processor = SentenceBoundaryProcessor()
+    emotion_tag_processor = EmotionTagProcessor()
+    sliding_window_processor = ContextSlidingWindowProcessor(emotion_processor=emotion_tag_processor, max_messages=10)
 
 
     # Pipeline Configuration
@@ -97,13 +99,17 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         stt,                                # Transcribes voice to text
         #log_sender_stt,                     # Sends transcriptions back to frontend for real-time display
         user_aggregator,                    # Maintains conversation context
+        sliding_window_processor,            # Ensures LLM context doesn't exceed token limits (with emotion tag reinjection)
         llm,                                # Generates text response (Logged for now),
+        #assistant_aggregator,               # Updates context with assistant response
+        emotion_tag_processor,              # Sends emotion to frontend and cleans text for TTS
         #filter_thinking_processor,          # Filters out the thinking process
         #sentence_processor,                 # Ensures natural sentence boundaries
         log_sender_llm,                     # Sends transcriptions and LLM responses back to frontend for real-time display
         tts,                                # Converts text response to audio (To be implemented)
-        transport.output(),                 # Sends audio back (Will be connected to TTS soon)
-        assistant_aggregator                # Updates context with assistant response
+        transport.output(),                # Sends audio back (Will be connected to TTS soon)
+        assistant_aggregator,               # Updates context with assistant response
+
     ])
 
     # 4. Task Runner

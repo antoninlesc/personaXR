@@ -9,6 +9,9 @@ const isConnected = ref(false);
 const isConnecting = ref(false);
 const errorMsg = ref("");
 
+// State for the avatar and emotion placeholder
+const currentEmotion = ref("NEUTRAL"); // Default emotion
+
 // State for chat and metrics
 const chatHistory = ref([]);
 const latencyMetrics = ref({
@@ -54,6 +57,12 @@ function handlePipecatMessage(rawData) {
         }
         scrollToBottom();
     }
+    else if (data.type === "emotion") {
+        // Emotion tag received from the backend
+        console.log("Avatar emotion updated to:", data.value);
+        currentEmotion.value = data.value; // Log pour vérifier l'émotion reçue
+    }
+
     else if (data.type === "metrics") {
         // Detailed latency data received dynamically
         if (data.data) {
@@ -105,16 +114,18 @@ async function scrollToBottom() {
     
     <!-- Left Column: 3D Scene -->
     <div class="scene-panel">
-        <h2>Scène 3D en Temps Réel</h2>
-        <!-- Placeholder for the 3D scene rendered by Pipecat -->
-        <div class="placeholder">
-            scène 3D.
+        <h2>Real Time Avatar</h2>
+        <div class="placeholder emotion-container">
+            <div class="emotion-avatar" :class:="currentEmotion.toLowerCase()">
+                <span class="emotion-text">{{ currentEmotion }}</span>
+            </div>
+            <p class="emotion-subtitle">Current psychological state.</p>
         </div>
     </div>
     
     <!-- Right Column: Controls, Chat Log & Metrics -->
     <div class="control-panel panel">
-        <h2>Interaction Temps Réel</h2>
+        <h2>Real Time Interaction</h2>
         
         <button 
             @click="startConversation" 
@@ -131,17 +142,6 @@ async function scrollToBottom() {
         <video ref="mediaElement" autoplay playsinline style="display: none;"></video>
 
         <hr class="divider" />
-
-        <!-- Metrics Dashboard -->
-        <div class="metrics-box" v-if="isConnected">
-            <h3 class="metrics-title">Métriques de Latence</h3>
-            <div class="metric" v-for="(metric, key) in latencyMetrics" :key="key">
-                <span class="metric-label">{{ metric.label }}</span>
-                <span class="metric-value" :class="{'good': metric.value > 0 && metric.value < 1000, 'bad': metric.value > 2000}">
-                    {{ metric.value ? metric.value + ' ms' : '--' }}
-                </span>
-            </div>
-        </div>
 
         <!-- Chat Log Terminal -->
         <div class="chat-log" ref="chatLogRef">
