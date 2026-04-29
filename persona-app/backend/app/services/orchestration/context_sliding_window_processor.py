@@ -11,7 +11,7 @@ class ContextSlidingWindowProcessor(FrameProcessor):
     async def process_frame(self, frame: Frame, direction: FrameDirection):
         await super().process_frame(frame, direction)
 
-        # ── Duck Typing : On intercepte n'importe quelle frame qui descend vers le LLM
+        # On intercepte n'importe quelle frame qui descend vers le LLM
         # et qui transporte un contexte (messages). A la place de faire du FrameType checking rigide, on vérifie simplement la présence d'un attribut "messages" ou "context.messages".
         messages = None
         if direction == FrameDirection.DOWNSTREAM:

@@ -114,12 +114,11 @@ async function scrollToBottom() {
     
     <!-- Left Column: 3D Scene -->
     <div class="scene-panel">
-        <h2>Real Time Avatar</h2>
+        <!-- <h2>Real Time Avatar</h2> -->
         <div class="placeholder emotion-container">
             <div class="emotion-avatar" :class:="currentEmotion.toLowerCase()">
                 <span class="emotion-text">{{ currentEmotion }}</span>
             </div>
-            <p class="emotion-subtitle">Current psychological state.</p>
         </div>
     </div>
     
@@ -133,7 +132,7 @@ async function scrollToBottom() {
             :disabled="isConnected || isConnecting"
         >
             <span v-if="isConnecting">Connexion en cours...</span>
-            <span v-else-if="isConnected">🟢 Connecté</span>
+            <span v-else-if="isConnected">Connecté</span>
             <span v-else>Démarrer la conversation</span>
         </button>
         <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
