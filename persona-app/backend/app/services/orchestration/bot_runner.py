@@ -16,7 +16,7 @@ from pipecat.processors.audio.vad_processor import VADProcessor
 
 from app.api.dependencies import get_system_prompt
 from app.core.config import settings
-from app.services.orchestration.log_sender import WebRTCLogSender, SessionMetrics
+from app.services.orchestration.log_sender import WebRTCLogSender
 from app.services.orchestration.sentence_processor import SentenceBoundaryProcessor
 from app.services.orchestration.filter_thinking_processor import FilterThinkingProcessor
 from app.services.orchestration.emotion_tag_processor import EmotionTagProcessor
@@ -29,8 +29,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     """
     print("Initializing Pipecat Pipeline...")
     print("VLLM Base URL:", settings.vllm_base_url)  # Debug print to verify config loading
-    session_metrics = SessionMetrics()
-
+    
     system_prompt = get_system_prompt()  # Retrieve the system prompt (can be set via API)
     if not system_prompt:
         print("No Persona loaded.No system prompt found for session. Using default.")
@@ -81,9 +80,9 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
-    log_sender_vad = WebRTCLogSender(webrtc_connection, session_metrics=session_metrics, role="vad")
-    log_sender_stt = WebRTCLogSender(webrtc_connection, session_metrics=session_metrics, role="stt")
-    log_sender_llm = WebRTCLogSender(webrtc_connection, session_metrics=session_metrics, role="llm")
+    
+    log_sender_stt = WebRTCLogSender(webrtc_connection, role="stt")
+    log_sender_llm = WebRTCLogSender(webrtc_connection, role="llm")
 
     filter_thinking_processor = FilterThinkingProcessor()
     sentence_processor = SentenceBoundaryProcessor()
@@ -97,7 +96,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
         vad_processor,                      # Detects speech segments
         #log_sender_vad,                     # Sends VAD events back to frontend
         stt,                                # Transcribes voice to text
-        #log_sender_stt,                     # Sends transcriptions back to frontend for real-time display
+        log_sender_stt,                     # Sends transcriptions back to frontend for real-time display
         user_aggregator,                    # Maintains conversation context
         sliding_window_processor,            # Ensures LLM context doesn't exceed token limits (with emotion tag reinjection)
         llm,                                # Generates text response (Logged for now),

@@ -21,7 +21,6 @@ const latencyMetrics = ref({
 
 // This function is called every time Python sends a message via the Data Channel
 function handlePipecatMessage(rawData) {
-    console.log("PIPECAT MESSAGE:", rawData); // Ajout pour vérifier ce qui arrive
     
     // Sécurité Anti-Double-Stringify
     let data = rawData;
