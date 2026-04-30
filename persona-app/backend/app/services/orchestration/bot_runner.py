@@ -1,7 +1,7 @@
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.task import PipelineTask
 from pipecat.pipeline.runner import PipelineRunner
-from pipecat.frames.frames import LLMRunFrame, EndFrame, TextFrame
+from pipecat.frames.frames import LLMRunFrame, EndFrame
 from pipecat.services.whisper.stt import WhisperSTTService
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
@@ -17,8 +17,8 @@ from pipecat.processors.audio.vad_processor import VADProcessor
 from app.api.dependencies import get_system_prompt
 from app.core.config import settings
 from app.services.orchestration.log_sender import WebRTCLogSender
-from app.services.orchestration.sentence_processor import SentenceBoundaryProcessor
-from app.services.orchestration.filter_thinking_processor import FilterThinkingProcessor
+# from app.services.orchestration.sentence_processor import SentenceBoundaryProcessor
+# from app.services.orchestration.filter_thinking_processor import FilterThinkingProcessor
 from app.services.orchestration.emotion_tag_processor import EmotionTagProcessor
 from app.services.orchestration.context_sliding_window_processor import ContextSlidingWindowProcessor
 
@@ -84,8 +84,8 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection):
     log_sender_stt = WebRTCLogSender(webrtc_connection, role="stt")
     log_sender_llm = WebRTCLogSender(webrtc_connection, role="llm")
 
-    filter_thinking_processor = FilterThinkingProcessor()
-    sentence_processor = SentenceBoundaryProcessor()
+    # filter_thinking_processor = FilterThinkingProcessor()
+    # sentence_processor = SentenceBoundaryProcessor()
     emotion_tag_processor = EmotionTagProcessor()
     sliding_window_processor = ContextSlidingWindowProcessor(emotion_processor=emotion_tag_processor, max_messages=10)
 
